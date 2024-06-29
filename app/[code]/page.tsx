@@ -31,7 +31,7 @@ export default function Page({
 }) {
   const [isChecked, setIsChecked] = useState(false);
 
-  const handleCheckboxClick = (e) => {
+  const handleCheckboxClick = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.target.checked ? setIsChecked(true) : setIsChecked(false);
   };
 
