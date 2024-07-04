@@ -1,5 +1,4 @@
 "use client";
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,8 +13,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ArrowRightIcon } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { fetchFromAPI } from "../lib/api";
 
 const formSchema = z.object({
   referenceNumber: z.string().length(6),
@@ -30,8 +29,20 @@ export default function MyBookingForm() {
 
   const { push } = useRouter();
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    push(`/${values.referenceNumber}`);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      const { data } = await fetchFromAPI(
+        `api/web/flight/queryCode?code=${values.referenceNumber}`
+      );
+      // console.log(data.data.records.length);
+      if (data.data.records.length > 0) {
+        push(`/${values.referenceNumber}`);
+      } else {
+        alert("wrong code");
+      }
+    } catch (error: any) {
+      console.error("Error here:", error);
+    }
   }
 
   return (

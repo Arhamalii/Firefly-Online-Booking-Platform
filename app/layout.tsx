@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import Header from "@/components/header";
 import Footer from "@/components/footer";
+import Header from "@/components/header";
+import { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Firefly Online Booking Service",

@@ -2,6 +2,7 @@
 import DetailsSheet from "@/components/details-sheet";
 import AnimatedCollapse from "@/components/ui/animation";
 import { Button } from "@/components/ui/button";
+import { fetchFromAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   ArrowRightIcon,
@@ -16,7 +17,8 @@ import {
   Split,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { IconType } from "react-icons";
 import { CiPlane } from "react-icons/ci";
 import { FaArrowRight, FaRegEdit } from "react-icons/fa";
@@ -34,6 +36,85 @@ export default function Page({
   const handleCheckboxClick = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.target.checked ? setIsChecked(true) : setIsChecked(false);
   };
+  // details state
+  const [details, setDetails] = useState<any[]>([]);
+  const { push } = useRouter();
+
+  // Example type assertion if you know the structure
+  interface FlightRecord {
+    get_flight_info?: {
+      created_at: string;
+      start_airport: string;
+      end_airport: string;
+      date: string;
+    };
+  }
+
+  // fetch function
+  const fetchDetais = async () => {
+    try {
+      const { data } = await fetchFromAPI(
+        `api/web/flight/queryCode?code=${params.code}`
+      );
+      if (data.data.records.length > 0) {
+        setDetails(data.data.records as FlightRecord[]);
+      } else {
+        push("/");
+      }
+    } catch (error: any) {
+      alert("Something Went Wrong");
+    }
+  };
+  useEffect(() => {
+    fetchDetais();
+  }, [params.code]);
+
+  // date formatiing
+  const formatDate = (inputDate: any) => {
+    const date = new Date(inputDate);
+
+    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const weekday = weekdays[date.getUTCDay()];
+    const day = date.getUTCDate();
+    const month = months[date.getUTCMonth()];
+    const year = date.getUTCFullYear();
+
+    return `${weekday}, ${day} ${month} ${year}`;
+  };
+
+  function convertToAbbreviation(name: string): string {
+    // Split the name by spaces
+    const words = name.split(" ");
+
+    if (words.length > 1) {
+      // If there are multiple words, take the first letter of each word
+      return words.map((word) => word.charAt(0).toUpperCase()).join("");
+    } else {
+      // If it's a single word, take the first three distinct consonants
+      const consonants = name.match(/[bcdfghjklmnpqrstvwxyz]/gi);
+      if (consonants && consonants.length >= 3) {
+        return consonants.slice(0, 3).join("").toUpperCase();
+      } else {
+        // If there are not enough consonants, use the first three characters
+        return name.substring(0, 3).toUpperCase();
+      }
+    }
+  }
 
   return (
     <div className="max-w-7xl pt-6 pb-6 w-full px-4 mx-auto grid grid-cols-[3.5fr_1.5fr] max-[930px]:grid-cols-1 gap-12">
@@ -52,7 +133,9 @@ export default function Page({
           </p>
           <p className="font-mundialLight text-[#333] font-light text-xl">
             Booking date:{" "}
-            <span className="text-primary font-bold">Tue, 28 May 2024</span>
+            <span className="text-primary font-bold">
+              {formatDate(details[0]?.get_flight_info.created_at)}
+            </span>
           </p>
         </div>
         <div className="flex flex-col gap-3">
@@ -65,12 +148,12 @@ export default function Page({
               <div className="border rounded-lg w-full">
                 <div className="border-b grid grid-cols-2 gap-4 max-[640px]:grid-cols-1 py-3 px-6">
                   <div className="flex gap-2 text-primary items-center font-semibold">
-                    <p>Nanking/Nanjing Airport</p>
+                    <p>{details[0]?.get_flight_info.start_airport}</p>
                     <ArrowRightIcon className="w-6 h-6 ml-2" />
-                    <p>Tawau</p>
+                    <p>{details[0]?.get_flight_info.end_airport}</p>
                   </div>
                   <div className="flex gap-2 items-center justify-between">
-                    <p>Saturday, 8 June 2024</p>
+                    <p>{formatDate(details[0]?.get_flight_info.date)}</p>
                     <button className="border rounded-md border-primary text-primary font-bold text-[12px] px-5 py-1">
                       SAVER
                     </button>
@@ -81,10 +164,10 @@ export default function Page({
                     <div className="flex flex-col items-start">
                       <h4 className="text-xl">
                         <span className="font-bold">00:50 -</span>
-                        <span> NKG</span>
+                        <span> {convertToAbbreviation("Nanking")}</span>
                       </h4>
                       <p className="text-[12px] text-muted-foreground">
-                        Nanking/Nanjing Airport
+                        {details[0]?.get_flight_info.start_airport}
                       </p>
                     </div>
                     <div className="flex items-center justify-center flex-col">
@@ -101,7 +184,9 @@ export default function Page({
                         <span className="font-bold">05:50 -</span>
                         <span> TWU</span>
                       </h4>
-                      <p className="text-[12px] text-muted-foreground">Tawau</p>
+                      <p className="text-[12px] text-muted-foreground">
+                        {details[0]?.get_flight_info.end_airport}
+                      </p>
                     </div>
                     <div className="flex items-center justify-center text-muted-foreground gap-2">
                       <PlaneTakeoff className="w-4 h-4" />
