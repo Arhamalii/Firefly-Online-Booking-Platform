@@ -123,3 +123,18 @@ details[close] {
   max-height: auto;
   transition: all 0.8s ease-in-out;
 }
+
+.callout-error {
+  border-left-color: #f12641 !important;
+  background-color: #fcedf0 !important;
+}
+
+.callout {
+  padding: 10px;
+  border: 1px solid transparent;
+  border-left-width: 5px;
+  border-radius: 4px;
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}

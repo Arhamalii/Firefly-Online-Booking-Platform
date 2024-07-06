@@ -1,18 +1,33 @@
-import { createContext, useContext, useState } from "react";
+// context/loadingContext.tsx
+import React, { createContext, useContext, useState } from "react";
 
-const DataContext = createContext({});
+interface LoadingContextType {
+  isLoading: boolean;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
-export function DataWrapper({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState([]);
+const LoadingContext = createContext<LoadingContextType>({
+  isLoading: false,
+  setIsLoading: () => {},
+});
+
+export const useLoading = () => useContext(LoadingContext);
+
+interface LoadingProviderProps {
+  children: React.ReactNode;
+}
+
+export const LoadingProvider: React.FC<LoadingProviderProps> = ({
+  children,
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const value = {
+    isLoading,
+    setIsLoading,
+  };
 
   return (
-    <DataContext.Provider value={[data, setData]}>
-      {children}
-    </DataContext.Provider>
+    <LoadingContext.Provider value={value}>{children}</LoadingContext.Provider>
   );
-}
-
-//custom hook
-export function useDataContext() {
-  useContext(DataContext);
-}
+};

@@ -1,12 +1,15 @@
+"use client";
+
 import Footer from "@/components/footer";
 import Header from "@/components/header";
-import { Metadata } from "next";
+import Laoder from "@/components/ui/laoder";
+import { LoadingProvider } from "@/context";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "Firefly Online Booking Service",
-  description: "Book your next flight with Firefly Online Booking Service",
-};
+// export const metadata: Metadata = {
+//   title: "Firefly Online Booking Service",
+//   description: "Book your next flight with Firefly Online Booking Service",
+// };
 
 export default function RootLayout({
   children,
@@ -16,9 +19,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Header />
-        {children}
-        <Footer />
+        <LoadingProvider>
+          <Laoder />
+          <Header />
+          {children}
+          <Footer />
+        </LoadingProvider>
       </body>
     </html>
   );

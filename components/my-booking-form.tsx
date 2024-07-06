@@ -12,8 +12,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useLoading } from "@/context";
 import { ArrowRightIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { fetchFromAPI } from "../lib/api";
 
 const formSchema = z.object({
@@ -21,15 +23,23 @@ const formSchema = z.object({
   contactEmail: z.string().email(),
 });
 
+interface MyBookingFormProps {
+  onErrorStateChange: (errorState: boolean) => void;
+}
+
 // Modified MyBookingForm component
-export default function MyBookingForm() {
+export default function MyBookingForm({
+  onErrorStateChange,
+}: MyBookingFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
 
+  const { setIsLoading, isLoading } = useLoading();
   const { push } = useRouter();
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
     try {
       const { data } = await fetchFromAPI(
         `api/web/flight/queryCode?code=${values.referenceNumber}`
@@ -37,22 +47,36 @@ export default function MyBookingForm() {
       // console.log(data.data.records.length);
       if (data.data.records.length > 0) {
         push(`/${values.referenceNumber}`);
+        onErrorStateChange(false);
       } else {
-        alert("wrong code");
+        onErrorStateChange(true);
       }
     } catch (error: any) {
       console.error("Error here:", error);
+    } finally {
+      setIsLoading(false);
     }
   }
+  useEffect(() => {
+    if (isLoading) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
 
+    // Cleanup function to remove the class when the component unmounts
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [isLoading]);
   return (
     <div>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="gap-4 w-full max-md:flex-col items-start grid grid-cols-3 max-lg:grid-cols-2 max-md:grid-cols-1"
+          className="gap-4 w-full max-md:flex-col items-start grid grid-cols-3 max-lg:grid-cols-2 max-md:grid-cols-1 "
         >
-          <div className="flex gap-y-1.5 flex-col">
+          <div className="flex gap-y-1.5 flex-col ">
             <FormField
               control={form.control}
               name="referenceNumber"
@@ -63,7 +87,9 @@ export default function MyBookingForm() {
                       <Input
                         label="BOOKING REFERENCE NUMBER"
                         id="referenceNumber"
-                        className="px-2 pb-7 pt-8"
+                        className={`px-2 pb-7 pt-8 ${
+                          isLoading && "relative -z-10"
+                        }`}
                         {...field}
                       />
                     </FormControl>
@@ -85,7 +111,9 @@ export default function MyBookingForm() {
                   <FormControl>
                     <Input
                       label="CONTACT EMAIL"
-                      className="px-2 pb-7 pt-8"
+                      className={`px-2 pb-7 pt-8 ${
+                        isLoading && "relative -z-10"
+                      }`}
                       id="contactEmail"
                       {...field}
                     />

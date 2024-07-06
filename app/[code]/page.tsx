@@ -1,17 +1,15 @@
 "use client";
-import DetailsSheet from "@/components/details-sheet";
+import FlightDetails from "@/components/flightDetails";
 import AnimatedCollapse from "@/components/ui/animation";
-import { Button } from "@/components/ui/button";
+import { useLoading } from "@/context";
 import { fetchFromAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   ArrowRightIcon,
-  ChevronRightIcon,
   CircleHelp,
   CircleUser,
   LucideIcon,
   Mail,
-  PlaneTakeoff,
   Printer,
   Search,
   Split,
@@ -20,9 +18,43 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { IconType } from "react-icons";
-import { CiPlane } from "react-icons/ci";
 import { FaArrowRight, FaRegEdit } from "react-icons/fa";
 import { IoIosArrowUp } from "react-icons/io";
+import {
+  createAbbreviation,
+  formatBirthdayDate,
+  formatDate,
+  getNameAbb,
+} from "../../lib/formatting";
+interface Passenger {
+  first_name: string;
+  last_name: string;
+  passenger_type: string;
+  // Add other properties for Passenger
+}
+
+interface Record {
+  flightNumber: string;
+  departure: string;
+  arrival: string;
+  passenger_birthday: string;
+  passenger_sex: string;
+  get_flight_info: {
+    created_at: string;
+    start_airport: string;
+    end_airport: string;
+    start_fly_time: string;
+    end_fly_time: string;
+    date: string;
+    flight_no: string;
+  };
+  // Add other properties for Record
+}
+
+interface FlightInfo {
+  passengers: Passenger[];
+  records: Record[];
+}
 
 export default function Page({
   params,
@@ -32,89 +64,53 @@ export default function Page({
   };
 }) {
   const [isChecked, setIsChecked] = useState(false);
-
+  const { setIsLoading, isLoading } = useLoading();
   const handleCheckboxClick = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.target.checked ? setIsChecked(true) : setIsChecked(false);
   };
   // details state
-  const [details, setDetails] = useState<any[]>([]);
+  const [details, setDetails] = useState<FlightInfo>({
+    passengers: [],
+    records: [],
+  });
   const { push } = useRouter();
 
   // Example type assertion if you know the structure
-  interface FlightRecord {
-    get_flight_info?: {
-      created_at: string;
-      start_airport: string;
-      end_airport: string;
-      date: string;
-    };
-  }
 
   // fetch function
   const fetchDetais = async () => {
+    setIsLoading(true);
     try {
       const { data } = await fetchFromAPI(
         `api/web/flight/queryCode?code=${params.code}`
       );
       if (data.data.records.length > 0) {
-        setDetails(data.data.records as FlightRecord[]);
+        setDetails(data.data);
       } else {
         push("/");
       }
     } catch (error: any) {
       alert("Something Went Wrong");
+    } finally {
+      setIsLoading(false);
     }
   };
   useEffect(() => {
     fetchDetais();
   }, [params.code]);
 
-  // date formatiing
-  const formatDate = (inputDate: any) => {
-    const date = new Date(inputDate);
-
-    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
-    const weekday = weekdays[date.getUTCDay()];
-    const day = date.getUTCDate();
-    const month = months[date.getUTCMonth()];
-    const year = date.getUTCFullYear();
-
-    return `${weekday}, ${day} ${month} ${year}`;
-  };
-
-  function convertToAbbreviation(name: string): string {
-    // Split the name by spaces
-    const words = name.split(" ");
-
-    if (words.length > 1) {
-      // If there are multiple words, take the first letter of each word
-      return words.map((word) => word.charAt(0).toUpperCase()).join("");
+  useEffect(() => {
+    if (isLoading) {
+      document.body.classList.add("overflow-hidden");
     } else {
-      // If it's a single word, take the first three distinct consonants
-      const consonants = name.match(/[bcdfghjklmnpqrstvwxyz]/gi);
-      if (consonants && consonants.length >= 3) {
-        return consonants.slice(0, 3).join("").toUpperCase();
-      } else {
-        // If there are not enough consonants, use the first three characters
-        return name.substring(0, 3).toUpperCase();
-      }
+      document.body.classList.remove("overflow-hidden");
     }
-  }
+
+    // Cleanup function to remove the class when the component unmounts
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [isLoading]);
 
   return (
     <div className="max-w-7xl pt-6 pb-6 w-full px-4 mx-auto grid grid-cols-[3.5fr_1.5fr] max-[930px]:grid-cols-1 gap-12">
@@ -134,7 +130,7 @@ export default function Page({
           <p className="font-mundialLight text-[#333] font-light text-xl">
             Booking date:{" "}
             <span className="text-primary font-bold">
-              {formatDate(details[0]?.get_flight_info.created_at)}
+              {formatDate(details?.records[0]?.get_flight_info.created_at)}
             </span>
           </p>
         </div>
@@ -145,65 +141,16 @@ export default function Page({
             </h4>
             <div className="flex flex-col gap-y-3">
               <p className="font-mundialLight text-[#565B5E]">Departure</p>
-              <div className="border rounded-lg w-full">
-                <div className="border-b grid grid-cols-2 gap-4 max-[640px]:grid-cols-1 py-3 px-6">
-                  <div className="flex gap-2 text-primary items-center font-semibold">
-                    <p>{details[0]?.get_flight_info.start_airport}</p>
-                    <ArrowRightIcon className="w-6 h-6 ml-2" />
-                    <p>{details[0]?.get_flight_info.end_airport}</p>
-                  </div>
-                  <div className="flex gap-2 items-center justify-between">
-                    <p>{formatDate(details[0]?.get_flight_info.date)}</p>
-                    <button className="border rounded-md border-primary text-primary font-bold text-[12px] px-5 py-1">
-                      SAVER
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-6 max-[640px]:grid-cols-1 items-center py-5 px-6">
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col items-start">
-                      <h4 className="text-xl">
-                        <span className="font-bold">00:50 -</span>
-                        <span> {convertToAbbreviation("Nanking")}</span>
-                      </h4>
-                      <p className="text-[12px] text-muted-foreground">
-                        {details[0]?.get_flight_info.start_airport}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center flex-col">
-                      <div className="border-t-2 w-36" />
-                      <CiPlane className="w-6 h-6 text-muted-foreground mt-[-12px] bg-white" />
-                      <p className="text-[12px] text-muted-foreground">
-                        Non-stop, 5h
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col items-start">
-                      <h4 className="text-xl">
-                        <span className="font-bold">05:50 -</span>
-                        <span> TWU</span>
-                      </h4>
-                      <p className="text-[12px] text-muted-foreground">
-                        {details[0]?.get_flight_info.end_airport}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-center text-muted-foreground gap-2">
-                      <PlaneTakeoff className="w-4 h-4" />
-                      <p className="text-[12px]">FY 3831</p>
-                    </div>
-                    <DetailsSheet>
-                      <Button
-                        variant="link"
-                        className="text-[12px] font-semibold"
-                      >
-                        View details
-                        <ChevronRightIcon className="w-4 h-4 ml-2" />
-                      </Button>
-                    </DetailsSheet>
-                  </div>
-                </div>
-              </div>
+              {details.records?.map((record) => (
+                <FlightDetails
+                  start_airport={record.get_flight_info.start_airport}
+                  end_airport={record.get_flight_info.end_airport}
+                  start_fly_time={record.get_flight_info.start_fly_time}
+                  end_fly_time={record.get_flight_info.end_fly_time}
+                  flight_no={record.get_flight_info.flight_no}
+                  date={record.get_flight_info.date}
+                />
+              ))}
             </div>
           </div>
           <div className="flex flex-col mt-7">
@@ -216,94 +163,112 @@ export default function Page({
         {/* passenger list */}
         {/*  API : iterate all passengers from here */}
 
-        {/* passenger 1  */}
-        <div
-          className="my-2 w-full"
-          style={{
-            backgroundColor: "white",
-            border: "1px solid #E1E7EA",
-            borderRadius: "12px",
-            cursor: "pointer",
-          }}
-        >
-          <details className="group">
-            <summary data-passenger="1" style={{ listStyleType: "none" }}>
-              <div className="row my-3 mx-4">
-                <div className="flex justify-between">
-                  <div className="box-orange bg-[#F38220] w-[42px] h-[42px] flex justify-center items-center rounded-md">
-                    <span className="text-white">YS</span>
-                  </div>
-                  <div
-                    className="col w-auto mx-7 text-[#333]"
-                    style={{ alignSelf: "center" }}
-                  >
-                    <div className="text-[14px]">
-                      <span
-                        className="textW600 itinerary-passengerName font-bold"
-                        id="itinerary-passengerName1"
-                        data-passenger="1"
-                        data-name="YANG  SHUXUAN"
-                        data-name2="YANG SHUXUAN"
-                      >
-                        Miss YANG SHUXUAN
+        {/* passengers  */}
+
+        {details?.passengers.map((passengers, i) => (
+          <div
+            className="w-full"
+            style={{
+              backgroundColor: "white",
+              border: "1px solid #E1E7EA",
+              borderRadius: "12px",
+              cursor: "pointer",
+            }}
+          >
+            <details className="group">
+              <summary data-passenger="1" style={{ listStyleType: "none" }}>
+                <div className="row my-3 mx-4">
+                  <div className="flex justify-between">
+                    <div className="box-orange bg-[#F38220] w-[42px] h-[42px] flex justify-center items-center rounded-md">
+                      <span className="text-white">
+                        {getNameAbb(
+                          passengers?.first_name + " " + passengers?.last_name
+                        )}
                       </span>
-                      <span className="textW300"> (Adult)</span>
                     </div>
-                  </div>
-
-                  <div
-                    id="button-adult-drop-1"
-                    className="cursor-pointer ml-auto w-auto self-center transition-transform duration-300 ease-in-out transform rotate-180"
-                  >
-                    <span className="float-right">
-                      <IoIosArrowUp className="w-[20px] text-[#333] group-open:rotate-180 transition" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </summary>
-
-            <AnimatedCollapse toggle={true}>
-              <div>
-                <div className="w-100 border-t border-gray-300 p-2.5 px-6 pb-5">
-                  <div className=" mt-1 text-[14px] text-[#333] font-mundialRegular font-semibold">
-                    Personal information
-                  </div>
-                  <div className="flex ">
-                    <div className="w-1/2">
-                      <div
-                        className="text-[14px] text-[#333] font-mundialLight"
-                        style={{ marginTop: "10px", color: "#717274" }}
-                      >
-                        Date of birth
-                      </div>
-                      <div
-                        style={{ marginTop: "4px" }}
-                        className="text-[14px] text-[#333] font-mundialLight"
-                      >
-                        21/02/1992
+                    <div
+                      className="col w-auto mx-7 text-[#333]"
+                      style={{ alignSelf: "center" }}
+                    >
+                      <div className="text-[14px]">
+                        <span
+                          className="textW600 itinerary-passengerName font-bold"
+                          id="itinerary-passengerName1"
+                          data-passenger="1"
+                          data-name="YANG  SHUXUAN"
+                          data-name2="YANG SHUXUAN"
+                        >
+                          {details?.records[i].passenger_sex === "M"
+                            ? "Mr"
+                            : "Miss"}
+                          {passengers.first_name} {passengers.last_name}
+                        </span>
+                        <span className="textW300">
+                          {" "}
+                          {passengers.passenger_type === "婴儿" || "infant"
+                            ? "( Infant )"
+                            : "( Adult )"}{" "}
+                        </span>
                       </div>
                     </div>
-                    <div className="w-1/2">
-                      <div
-                        className="text-[14px] text-[#333] font-mundialLight"
-                        style={{ marginTop: "10px", color: "#717274" }}
-                      >
-                        Enrich Number
-                      </div>
-                      <div
-                        style={{ marginTop: "4px" }}
-                        className="text-[14px] text-[#333] font-mundialLight"
-                      >
-                        No information provided
-                      </div>
+
+                    <div
+                      id="button-adult-drop-1"
+                      className="cursor-pointer ml-auto w-auto self-center transition-transform duration-300 ease-in-out transform rotate-180"
+                    >
+                      <span className="float-right">
+                        <IoIosArrowUp className="w-[20px] text-[#333] group-open:rotate-180 transition" />
+                      </span>
                     </div>
                   </div>
                 </div>
-              </div>
-            </AnimatedCollapse>
-          </details>
-        </div>
+              </summary>
+
+              <AnimatedCollapse toggle={true}>
+                <div>
+                  <div className="w-100 border-t border-gray-300 p-2.5 px-6 pb-5">
+                    <div className=" mt-1 text-[14px] text-[#333] font-mundialRegular font-semibold">
+                      Personal information
+                    </div>
+                    <div className="flex ">
+                      <div className="w-1/2">
+                        <div
+                          className="text-[14px] text-[#333] font-mundialLight"
+                          style={{ marginTop: "10px", color: "#717274" }}
+                        >
+                          Date of birth
+                        </div>
+                        <div
+                          style={{ marginTop: "4px" }}
+                          className="text-[14px] text-[#333] font-mundialLight"
+                        >
+                          {formatBirthdayDate(
+                            details?.records[i].passenger_birthday
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-1/2">
+                        <div
+                          className="text-[14px] text-[#333] font-mundialLight"
+                          style={{ marginTop: "10px", color: "#717274" }}
+                        >
+                          Enrich Number
+                        </div>
+                        <div
+                          style={{ marginTop: "4px" }}
+                          className="text-[14px] text-[#333] font-mundialLight"
+                        >
+                          No information provided
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </AnimatedCollapse>
+            </details>
+          </div>
+        ))}
+
         {/* -- */}
 
         {/* contact information */}
@@ -454,7 +419,16 @@ export default function Page({
                 />
                 <div className="ml-4">
                   <span className="font-semibold text-[14px] font-mundialBold ">
-                    Nanking/Nanjing Airport (NKG) to Tawau (TWU)
+                    {`${
+                      details.records[0]?.get_flight_info.start_airport
+                    } (${createAbbreviation(
+                      details.records[0]?.get_flight_info.start_airport
+                    )}) to
+                    ${
+                      details.records[0]?.get_flight_info.end_airport
+                    } (${createAbbreviation(
+                      details.records[0]?.get_flight_info.end_airport
+                    )})`}
                   </span>
                 </div>
               </div>
@@ -463,44 +437,30 @@ export default function Page({
                   id="button-adult-down-seat11"
                   className="border-t border-[#CED8DD]"
                 >
-                  <div className="flex items-center justify-between py-3">
-                    <div className="w-[45.67px] h-[42px] bg-[rgb(243,130,32)]  flex justify-center items-center rounded-md">
-                      <span className="text-white text-[14px] font-mundialLight">
-                        N/A
-                      </span>
-                    </div>
-                    <div className="ml-4 w-1/2">
-                      <span className="text-[14px] font-mundialBold text-[#333]">
-                        YANG SHUXUAN
-                      </span>
-                      <div className="text-gray-600 text-[12px] font-mundialLight">
-                        Adult
-                      </div>
-                    </div>
-                    <div className="text-orange-500 w-1/2 text-[14px] font-mundialBold">
-                      Not Assigned
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-3 ">
-                    <div className="bg-orange-500 w-[45.67px] h-[42px] flex justify-center items-center rounded-md">
-                      <span className="text-white text-[14px] font-mundialLight">
-                        N/A
-                      </span>
-                    </div>
-                    <div className="ml-4 w-1/2">
-                      <div>
-                        <span className=" text-[14px] font-mundialBold text-[#333]">
-                          HU CHENG
+                  {details?.passengers.map((passengers) => (
+                    <div className="flex items-center justify-between py-3">
+                      <div className="w-[45.67px] h-[42px] bg-[rgb(243,130,32)]  flex justify-center items-center rounded-md">
+                        <span className="text-white text-[14px] font-mundialLight">
+                          {getNameAbb(
+                            passengers?.first_name + " " + passengers?.last_name
+                          )}
                         </span>
                       </div>
-                      <div className="text-gray-600  text-[12px] font-mundialLight">
-                        Adult
+                      <div className="ml-4 w-1/2">
+                        <span className="text-[14px] font-mundialBold text-[#333]">
+                          {passengers.first_name} {passengers.last_name}
+                        </span>
+                        <div className="text-gray-600 text-[12px] font-mundialLight">
+                          {passengers.passenger_type === "婴儿" || "infant"
+                            ? "( Infant )"
+                            : "( Adult )"}
+                        </div>
+                      </div>
+                      <div className="text-orange-500 w-1/2 text-[14px] font-mundialBold">
+                        Not Assigned
                       </div>
                     </div>
-                    <div className="text-orange-500 w-1/2  text-[14px] font-mundialBold">
-                      Not Assigned
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -537,7 +497,16 @@ export default function Page({
                 />
                 <div className="ml-4">
                   <span className="font-semibold text-[14px] font-mundialBold ">
-                    Nanking/Nanjing Airport (NKG) to Tawau (TWU)
+                    {`${
+                      details.records[0]?.get_flight_info.start_airport
+                    } (${createAbbreviation(
+                      details.records[0]?.get_flight_info.start_airport
+                    )}) to
+                    ${
+                      details.records[0]?.get_flight_info.end_airport
+                    } (${createAbbreviation(
+                      details.records[0]?.get_flight_info.end_airport
+                    )})`}
                   </span>
                 </div>
               </div>
@@ -546,54 +515,35 @@ export default function Page({
                   id="button-adult-down-seat11"
                   className="border-t border-[#CED8DD]"
                 >
-                  <div className="flex items-center justify-between py-3">
-                    <div className="w-[45.67px] h-[42px] bg-[rgb(243,130,32)]  flex justify-center items-center rounded-md">
-                      <span className="text-white text-[14px] font-mundialLight">
-                        YS
-                      </span>
-                    </div>
-                    <div className="ml-4 w-1/2">
-                      <span className="text-[14px] font-mundialBold text-[#333]">
-                        YANG SHUXUAN
-                      </span>
-                      <div className="text-gray-600 text-[12px] font-mundialLight">
-                        Adult
-                      </div>
-                    </div>
-                    <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
-                      <span className="font-mundialLight text-[14px] text-[#333]">
-                        Baggage 20kg Free
-                      </span>
-                      <span className="font-mundialLight text-[12px] text-[#565B5E]">
-                        USD 0.00
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-3 ">
-                    <div className="bg-orange-500 w-[45.67px] h-[42px] flex justify-center items-center rounded-md">
-                      <span className="text-white text-[14px] font-mundialLight">
-                        HC
-                      </span>
-                    </div>
-                    <div className="ml-4 w-1/2">
-                      <div>
-                        <span className=" text-[14px] font-mundialBold text-[#333]">
-                          HU CHENG
+                  {details?.passengers.map((passengers) => (
+                    <div className="flex items-center justify-between py-3">
+                      <div className="w-[45.67px] h-[42px] bg-[rgb(243,130,32)]  flex justify-center items-center rounded-md">
+                        <span className="text-white text-[14px] font-mundialLight">
+                          {getNameAbb(
+                            passengers?.first_name + " " + passengers?.last_name
+                          )}
                         </span>
                       </div>
-                      <div className="text-gray-600  text-[12px] font-mundialLight">
-                        Adult
+                      <div className="ml-4 w-1/2">
+                        <span className="text-[14px] font-mundialBold text-[#333]">
+                          {passengers.first_name} {passengers.last_name}
+                        </span>
+                        <div className="text-gray-600 text-[12px] font-mundialLight">
+                          {passengers.passenger_type === "婴儿" || "infant"
+                            ? "( Infant )"
+                            : "( Adult )"}
+                        </div>
+                      </div>
+                      <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
+                        <span className="font-mundialLight text-[14px] text-[#333]">
+                          Baggage 20kg Free
+                        </span>
+                        <span className="font-mundialLight text-[12px] text-[#565B5E]">
+                          USD 0.00
+                        </span>
                       </div>
                     </div>
-                    <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
-                      <span className="font-mundialLight text-[14px] text-[#333]">
-                        Baggage 20kg Free
-                      </span>
-                      <span className="font-mundialLight text-[12px] text-[#565B5E]">
-                        USD 0.00
-                      </span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -630,7 +580,16 @@ export default function Page({
                 />
                 <div className="ml-4">
                   <span className="font-semibold text-[14px] font-mundialBold ">
-                    Nanking/Nanjing Airport (NKG) to Tawau (TWU)
+                    {`${
+                      details.records[0]?.get_flight_info.start_airport
+                    } (${createAbbreviation(
+                      details.records[0]?.get_flight_info.start_airport
+                    )}) to
+                    ${
+                      details.records[0]?.get_flight_info.end_airport
+                    } (${createAbbreviation(
+                      details.records[0]?.get_flight_info.end_airport
+                    )})`}
                   </span>
                 </div>
               </div>
@@ -639,48 +598,34 @@ export default function Page({
                   id="button-adult-down-seat11"
                   className="border-t border-[#CED8DD]"
                 >
-                  <div className="flex items-center justify-between py-3">
-                    <div className="w-[45.67px] h-[42px] bg-[rgb(243,130,32)]  flex justify-center items-center rounded-md">
-                      <span className="text-white text-[14px] font-mundialLight">
-                        YS
-                      </span>
-                    </div>
-                    <div className="ml-4 w-1/2">
-                      <span className="text-[14px] font-mundialBold text-[#333]">
-                        YANG SHUXUAN
-                      </span>
-                      <div className="text-gray-600 text-[12px] font-mundialLight">
-                        Adult
-                      </div>
-                    </div>
-                    <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
-                      <span className="font-mundialLight text-[12px] text-[#333]">
-                        No Meal
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-3 ">
-                    <div className="bg-orange-500 w-[45.67px] h-[42px] flex justify-center items-center rounded-md">
-                      <span className="text-white text-[14px] font-mundialLight">
-                        HC
-                      </span>
-                    </div>
-                    <div className="ml-4 w-1/2">
-                      <div>
-                        <span className=" text-[14px] font-mundialBold text-[#333]">
-                          HU CHENG
+                  {details?.passengers.map((passengers) => (
+                    <div className="flex items-center justify-between py-3 ">
+                      <div className="bg-orange-500 w-[45.67px] h-[42px] flex justify-center items-center rounded-md">
+                        <span className="text-white text-[14px] font-mundialLight">
+                          {getNameAbb(
+                            passengers?.first_name + " " + passengers?.last_name
+                          )}
                         </span>
                       </div>
-                      <div className="text-gray-600  text-[12px] font-mundialLight">
-                        Adult
+                      <div className="ml-4 w-1/2">
+                        <div>
+                          <span className=" text-[14px] font-mundialBold text-[#333]">
+                            {passengers.first_name} {passengers.last_name}
+                          </span>
+                        </div>
+                        <div className="text-gray-600  text-[12px] font-mundialLight">
+                          {passengers.passenger_type === "婴儿" || "infant"
+                            ? "( Infant )"
+                            : "( Adult )"}
+                        </div>
+                      </div>
+                      <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
+                        <span className="font-mundialLight text-[12px] text-[#333]">
+                          No Meal
+                        </span>
                       </div>
                     </div>
-                    <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
-                      <span className="font-mundialLight text-[12px] text-[#333]">
-                        No Meal
-                      </span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -723,7 +668,16 @@ export default function Page({
                 />
                 <div className="ml-4">
                   <span className="font-semibold text-[14px] font-mundialBold ">
-                    Nanking/Nanjing Airport (NKG) to Tawau (TWU)
+                    {`${
+                      details.records[0]?.get_flight_info.start_airport
+                    } (${createAbbreviation(
+                      details.records[0]?.get_flight_info.start_airport
+                    )}) to
+                    ${
+                      details.records[0]?.get_flight_info.end_airport
+                    } (${createAbbreviation(
+                      details.records[0]?.get_flight_info.end_airport
+                    )})`}
                   </span>
                 </div>
               </div>
@@ -732,48 +686,34 @@ export default function Page({
                   id="button-adult-down-seat11"
                   className="border-t border-[#CED8DD]"
                 >
-                  <div className="flex items-center justify-between py-3">
-                    <div className="w-[45.67px] h-[42px] bg-[rgb(243,130,32)]  flex justify-center items-center rounded-md">
-                      <span className="text-white text-[14px] font-mundialLight">
-                        YS
-                      </span>
-                    </div>
-                    <div className="ml-4 w-1/2">
-                      <span className="text-[14px] font-mundialBold text-[#333]">
-                        YANG SHUXUAN
-                      </span>
-                      <div className="text-gray-600 text-[12px] font-mundialLight">
-                        Adult
-                      </div>
-                    </div>
-                    <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
-                      <span className="font-mundialLight text-[12px] text-[#333]">
-                        No Extra SSR
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-3 ">
-                    <div className="bg-orange-500 w-[45.67px] h-[42px] flex justify-center items-center rounded-md">
-                      <span className="text-white text-[14px] font-mundialLight">
-                        HC
-                      </span>
-                    </div>
-                    <div className="ml-4 w-1/2">
-                      <div>
-                        <span className=" text-[14px] font-mundialBold text-[#333]">
-                          HU CHENG
+                  {details?.passengers.map((passengers) => (
+                    <div className="flex items-center justify-between py-3 ">
+                      <div className="bg-orange-500 w-[45.67px] h-[42px] flex justify-center items-center rounded-md">
+                        <span className="text-white text-[14px] font-mundialLight">
+                          {getNameAbb(
+                            passengers?.first_name + " " + passengers?.last_name
+                          )}
                         </span>
                       </div>
-                      <div className="text-gray-600  text-[12px] font-mundialLight">
-                        Adult
+                      <div className="ml-4 w-1/2">
+                        <div>
+                          <span className=" text-[14px] font-mundialBold text-[#333]">
+                            {passengers.first_name} {passengers.last_name}
+                          </span>
+                        </div>
+                        <div className="text-gray-600  text-[12px] font-mundialLight">
+                          {passengers.passenger_type === "婴儿" || "infant"
+                            ? "( Infant )"
+                            : "( Adult )"}
+                        </div>
+                      </div>
+                      <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
+                        <span className="font-mundialLight text-[12px] text-[#333]">
+                          No Extra SSR
+                        </span>
                       </div>
                     </div>
-                    <div className="w-1/2 text-[14px] font-mundialBold flex flex-col">
-                      <span className="font-mundialLight text-[12px] text-[#333]">
-                        No Extra SSR
-                      </span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
