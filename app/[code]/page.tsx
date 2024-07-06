@@ -142,6 +142,7 @@ export default function Page({
             <div className="flex flex-col gap-y-3">
               <p className="font-mundialLight text-[#565B5E]">Departure</p>
               {details.records?.map((record) => (
+                <span key={record.get_flight_info.flight_no}>
                 <FlightDetails
                   start_airport={record.get_flight_info.start_airport}
                   end_airport={record.get_flight_info.end_airport}
@@ -150,6 +151,7 @@ export default function Page({
                   flight_no={record.get_flight_info.flight_no}
                   date={record.get_flight_info.date}
                 />
+                </span>
               ))}
             </div>
           </div>
@@ -174,6 +176,7 @@ export default function Page({
               borderRadius: "12px",
               cursor: "pointer",
             }}
+            key={i}
           >
             <details className="group">
               <summary data-passenger="1" style={{ listStyleType: "none" }}>
@@ -437,8 +440,11 @@ export default function Page({
                   id="button-adult-down-seat11"
                   className="border-t border-[#CED8DD]"
                 >
-                  {details?.passengers.map((passengers) => (
-                    <div className="flex items-center justify-between py-3">
+                  {details?.passengers.map((passengers, i) => (
+                    <div
+                      className="flex items-center justify-between py-3"
+                      key={i}
+                    >
                       <div className="w-[45.67px] h-[42px] bg-[rgb(243,130,32)]  flex justify-center items-center rounded-md">
                         <span className="text-white text-[14px] font-mundialLight">
                           {getNameAbb(
@@ -515,8 +521,11 @@ export default function Page({
                   id="button-adult-down-seat11"
                   className="border-t border-[#CED8DD]"
                 >
-                  {details?.passengers.map((passengers) => (
-                    <div className="flex items-center justify-between py-3">
+                  {details?.passengers.map((passengers, i) => (
+                    <div
+                      className="flex items-center justify-between py-3"
+                      key={i}
+                    >
                       <div className="w-[45.67px] h-[42px] bg-[rgb(243,130,32)]  flex justify-center items-center rounded-md">
                         <span className="text-white text-[14px] font-mundialLight">
                           {getNameAbb(
@@ -598,8 +607,11 @@ export default function Page({
                   id="button-adult-down-seat11"
                   className="border-t border-[#CED8DD]"
                 >
-                  {details?.passengers.map((passengers) => (
-                    <div className="flex items-center justify-between py-3 ">
+                  {details?.passengers.map((passengers, i) => (
+                    <div
+                      className="flex items-center justify-between py-3"
+                      key={i}
+                    >
                       <div className="bg-orange-500 w-[45.67px] h-[42px] flex justify-center items-center rounded-md">
                         <span className="text-white text-[14px] font-mundialLight">
                           {getNameAbb(
@@ -686,8 +698,12 @@ export default function Page({
                   id="button-adult-down-seat11"
                   className="border-t border-[#CED8DD]"
                 >
-                  {details?.passengers.map((passengers) => (
-                    <div className="flex items-center justify-between py-3 ">
+                  {details?.passengers.map((passengers, i) => (
+                    <div
+                      className="flex items-center justify-between py-3
+                    "
+                      key={i}
+                    >
                       <div className="bg-orange-500 w-[45.67px] h-[42px] flex justify-center items-center rounded-md">
                         <span className="text-white text-[14px] font-mundialLight">
                           {getNameAbb(
