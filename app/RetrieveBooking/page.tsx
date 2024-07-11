@@ -4,7 +4,7 @@ import { useLoading } from "@/context";
 import Link from "next/link";
 import { useState } from "react";
 
-export default function Home() {
+export default function RetrieveBooking() {
   const [error, setError] = useState(false);
   const handleErrorState = (errorState: boolean) => {
     setError(errorState);
@@ -40,20 +40,20 @@ export default function Home() {
           className={`menu-container mb-[2rem] ${isLoading && "tabZcontrol"}`}
         >
           <Link className="menu-item" href={"/"}>
-            <div className="menu-title selected font-mundialBold underline-orange">
+            <div className="menu-title selected font-mundialBold">
               <img
                 className="active"
-                src="https://booking.fireflyz.com.my/images/Firefly/v3/menu-flight-selected.svg"
+                src="https://booking.fireflyz.com.my/images/Firefly/v3/menu-flight.svg"
                 style={{ display: "inline" }}
               />
               Book a Flight
             </div>
           </Link>
           <Link className="menu-item" href={"/RetrieveBooking"}>
-            <div className="menu-title selected font-mundialBold">
+            <div className="menu-title selected font-mundialBold underline-orange">
               <img
                 className="active"
-                src="https://booking.fireflyz.com.my/images/Firefly/v3/menu-calendar-day.svg"
+                src="https://booking.fireflyz.com.my/images/Firefly/v3/menu-calendar-day-selected.svg"
               />
               My Booking
             </div>

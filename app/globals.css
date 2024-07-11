@@ -138,3 +138,68 @@ details[close] {
   gap: 5px;
   margin-bottom: 10px;
 }
+
+.menu-container {
+  display: flex;
+  height: 64px;
+  background-color: #fff;
+  justify-content: space-around;
+  padding-inline: 100px;
+  border-bottom: 1px solid #f0f3f5;
+  position: relative;
+  z-index: 1;
+}
+
+.menu-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #565b5e;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 100%;
+}
+.underline-orange {
+  position: relative;
+  color: #ff7900;
+}
+
+.underline-orange::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 4px; /* Adjust the height as needed */
+  background-color: #ff7900; /* Use the desired orange color */
+  bottom: -2px; /* Adjust the position as needed */
+  left: 0;
+}
+
+.tabZcontrol {
+  position: relative;
+  z-index: -999;
+}
+
+@media screen and (max-width: 991px) {
+  .menu-container {
+    padding-inline: 0px;
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .menu-item {
+    width: 33.33%;
+  }
+  .menu-title {
+    font-weight: 600;
+    font-size: 10px;
+    color: #565b5e;
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+}

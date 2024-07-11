@@ -4,7 +4,7 @@ import { useLoading } from "@/context";
 import Link from "next/link";
 import { useState } from "react";
 
-export default function Home() {
+export default function WebCheckIn() {
   const [error, setError] = useState(false);
   const handleErrorState = (errorState: boolean) => {
     setError(errorState);
@@ -30,20 +30,14 @@ export default function Home() {
         </div>
       </div>
       <div className="max-w-7xl pt-6 pb-6 flex flex-col gap-y-3 h-dvh w-full px-4 mx-auto">
-        {/* <div className="flex gap-3 items-center text-3xl">
-          <CalendarIcon className="w-8 h-8" />
-          <h2 className="scroll-m-20 font-semibold tracking-tight first:mt-0">
-            My Booking
-          </h2>
-        </div> */}
         <div
           className={`menu-container mb-[2rem] ${isLoading && "tabZcontrol"}`}
         >
           <Link className="menu-item" href={"/"}>
-            <div className="menu-title selected font-mundialBold underline-orange">
+            <div className="menu-title selected font-mundialBold ">
               <img
                 className="active"
-                src="https://booking.fireflyz.com.my/images/Firefly/v3/menu-flight-selected.svg"
+                src="https://booking.fireflyz.com.my/images/Firefly/v3/menu-flight.svg"
                 style={{ display: "inline" }}
               />
               Book a Flight
@@ -59,10 +53,10 @@ export default function Home() {
             </div>
           </Link>
           <Link className="menu-item" href={"/WebCheckIn"}>
-            <div className="menu-title selected font-mundialBold">
+            <div className="menu-title selected font-mundialBold underline-orange">
               <img
                 className="not-active"
-                src="https://booking.fireflyz.com.my/images/Firefly/v3/menu-tickets-airline.svg"
+                src="https://booking.fireflyz.com.my/images/Firefly/v3/menu-tickets-airline-selected.svg"
               />
               Check-In
             </div>
